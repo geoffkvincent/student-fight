@@ -1,0 +1,8 @@
+h1 { text-align: center; }
+
+#loading_zone {
+  border: solid 1px black;
+  min-height: 100px;
+  width: 300px;
+  cursor: pointer;
+}
