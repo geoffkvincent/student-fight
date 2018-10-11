@@ -1,68 +1,108 @@
-var loaded = false;
-var students = [];
+import Avatar from './Avatar'
 
-function renderStudents() {
-  var list = document.getElementById('students');
-  list.innerHTML = null;
-  students.forEach( function(student) {
-    var li = document.createElement('li')
-    li.innerText = student.name
-    list.append(li)
-  })
-}
+class App {
+  loaded = false;
+  students = [];
+  button = document.getElementById('loading_zone')
+  leftFighter = document.getElementById('left')
+  rightFighter = document.getElementById('right')
 
-function sample() {
-  var index = Math.floor(Math.random() * students.length)
-  var student = students[index]
-  students.splice(index, 1)
-  return student
-}
+  componentDidMount() {
+    this.leftFighter.addEventListener('click', () => this.winner('left') )
+    this.rightFighter.addEventListener('click', () => this.winner('right') )
+    this.button.addEventListener('click', this.pullStudents)
+  }
 
-function selectStudents() {
-  var left = sample();
-  var right = sample();
-  renderStudents();
-  return [left, right]
-}
+  renderStudents = () => {
+    const list = document.getElementById('students');
+    list.innerHTML = null;
+    this.students.forEach( (student) => {
+      const li = document.createElement('li')
+      li.innerText = student.name
+      list.append(li)
+    })
+  }
 
-function createAvatar(position, student) {
-  return "<h5 id='fighter_" + position + "' data-name='" + student.name + "' data-avatar='" + student.avatar + "' class='center fighter'>" + student.name + "</h5><img class='avatar' alt='student avatar' src='" + student.avatar + "'/>"
-}
+  sample = () => {
+    const index = Math.floor(Math.random() * this.students.length)
+    const student = this.students[index]
+    this.students.splice(index, 1)
+    return student
+  }
 
-function placeFighters(fighting) {
-  var left = createAvatar('left', fighting[0])
-  var right = createAvatar('right', fighting[1])
-  var leftBox = document.getElementById('left')
-  var rightBox = document.getElementById('right')
-  leftBox.innerHTML = left;
-  rightBox.innerHTML = right;
-}
+  selectStudents = () => {
+    const left = this.sample();
+    const right = this.sample();
+    this.renderStudents();
+    return [left, right]
+  }
 
-function startFight() {
-  loaded = true
-  var left = document.getElementById('left')
-  var right = document.getElementById('right')
-  left.className = 'left fight-box';
-  right.className = 'left fight-box';
-  var fighting = selectStudents();
-  placeFighters(fighting)
-}
+  placeFighters = (fighting) => {
+    const left = Avatar('left', fighting[0])
+    const right = Avatar('right', fighting[1])
+    const leftBox = document.getElementById('left')
+    const rightBox = document.getElementById('right')
+    leftBox.innerHTML = left;
+    rightBox.innerHTML = right;
+    //setTimeout(pickWinner, 1000)
+  }
 
-function pullStudents() {
-  if (!loaded) {
-    var xhr = new XMLHttpRequest()
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState == XMLHttpRequest.DONE) {
-        students = JSON.parse(xhr.responseText);
-        renderStudents()
-        document.getElementById('load_students').remove()
-        startFight();
+  startFight = () => {
+    this.loaded = true
+    const left = document.getElementById('left')
+    const right = document.getElementById('right')
+    left.className = 'left fight-box';
+    right.className = 'left fight-box';
+    const fighting = this.selectStudents();
+    this.placeFighters(fighting)
+  }
+
+  pullStudents = () => {
+    if (!this.loaded) {
+      const xhr = new XMLHttpRequest()
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState == XMLHttpRequest.DONE) {
+          this.students = JSON.parse(xhr.responseText);
+          this.renderStudents()
+          document.getElementById('load_students').remove()
+          this.startFight();
+        }
       }
+      xhr.open('GET', 'https://canvas-students.herokuapp.com/api/student_list/64', true)
+      xhr.send(null)
     }
-    xhr.open('GET', 'https://canvas-students.herokuapp.com/api/student_list/64', true)
-    xhr.send(null)
+  }
+
+  pickWinner = () => {
+    const positions = ['left', 'right']
+    const index = Math.floor(Math.random() * 2)
+    const position = positions[index]
+    this.winner(position)
+  }
+
+  winner = (position) => {
+    const fighter = document.getElementById(`fighter_${position}`);
+    const data = fighter.dataset;
+    const label = document.getElementById('winner');
+    label.innerHTML = `Winner: ${data.name}`;
+    this.students.push(data);
+    if (this.students.length !== 1) {
+      const fighting = this.selectStudents();
+      this.placeFighters(fighting);
+    } else {
+      const avatar = Avatar(position, data);
+      const div = document.createElement('div');
+      div.className = 'winner';
+      div.innerHTML = avatar;
+      const left = document.getElementById('left');
+      const right = document.getElementById('right');
+      const fightZone = document.getElementById('fight_zone');
+      left.remove();
+      right.remove();
+      fightZone.append(div);
+    }
   }
 }
 
-var button = document.getElementById('loading_zone')
-button.addEventListener('click', pullStudents)
+const app = new App()
+app.componentDidMount();
